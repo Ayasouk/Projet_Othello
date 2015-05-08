@@ -47,7 +47,10 @@ void afficher_othello(othello* oth){
     for(i=0; i<TAILLE; i++){
         printf("| %d | ", i);
         for(j=0; j<TAILLE; j++){
-            printf("%c | ", oth->data[i][j]);
+            if(oth->data[i][j]==J1){
+				printf("\033[%34m%c\033[%97m | ", oth->data[i][j]);
+			}
+			else printf("%c | ", oth->data[i][j]);
         }
         printf("\n");
     }
@@ -192,7 +195,9 @@ int min_max(othello* jeu, char joueur, char joueur_actif, int nb_coups, int*ti, 
     int meilleur_score;
     
     /* Si la partie est finie ou si on a atteind la profondeur maximale -> on renvoie le score du plateau */
-    
+   // if(partie_finie(nb_coups, passe) || depth == max_depth){
+	//	return 0;
+	//}
     /*  pour tous les coups possibles
             sauvegarder le jeu (empiler)
             jouer ce coup
@@ -226,7 +231,15 @@ int score(othello* jeu, char joueur, int depth, int nb_coups){
     for(i=0;i<TAILLE;i++){
         for(j=0;j<TAILLE;j++){
             if(jeu->data[i][j] == joueur)
-                score++;
+                //si le pion est dans un coin on ajoute 3 aux score
+                if((i==0 && j==0)||(i==TAILLE-1 && j==TAILLE-1))
+					score+=3;
+				//si le pion est ni sur une bordure ni dans un coin on ajoute 1 au score
+				if((i!=0 && i!=TAILLE-1) && (j!=0 && j!=TAILLE-1))
+					score++;
+				//si le pion est sur une bordure
+				else if((i==0||i==TAILLE-1)&&(j!=0 && j!= TAILLE-1) || (i!=0 && i != TAILLE-1)&&(j==0||j==TAILLE-1))
+					score+=2;
         }
     }
     return score;
