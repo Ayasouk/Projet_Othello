@@ -48,7 +48,7 @@ void afficher_othello(othello* oth){
         printf("| %d | ", i);
         for(j=0; j<TAILLE; j++){
             if(oth->data[i][j]==J1){
-				printf("\033[%34m%c\033[%97m | ", oth->data[i][j]);
+				printf("%c | ", oth->data[i][j]);
 			}
 			else printf("%c | ", oth->data[i][j]);
         }
@@ -192,12 +192,65 @@ int humain_joue_un_coup(othello* jeu, char joueur){
  */
 int min_max(othello* jeu, char joueur, char joueur_actif, int nb_coups, int*ti, int*tj, int depth, int max_depth){
     
-    int meilleur_score;
-    
+    int meilleur_score =-1;
+    int cur_score;
+    int i, j;
+	
+	typedef struct coord_meilleur_coup{ int ligne; int colonne;} coord_MC; //structure des coordonnées d'un meilleur coup
+	int compteur_mc= 0; //compteur de meilleur coup 
+	coord_MC tab[TAILLE*TAILLE]; /* tableau stockant chaque meilleur coup possible */
+	
     /* Si la partie est finie ou si on a atteind la profondeur maximale -> on renvoie le score du plateau */
-   // if(partie_finie(nb_coups, passe) || depth == max_depth){
-	//	return 0;
-	//}
+	if(partie_finie(nb_coups, 0)||depth == max_depth){
+		meilleur_score = score(jeu, joueur_actif, depth, nb_coups);
+	}
+	else {
+		//on parcours toutes les positions
+		for(i=0; i<TAILLE; i++){
+			for(j=0; j<TAILLE; j++){
+				//si on a un coup possible on renvoi le meilleur coup a jouer
+				if(coup_possible(jeu, joueur_actif, i, j)){
+					empiler(*jeu);
+					jouer_un_coup(jeu, joueur_actif, i, j);
+					cur_score = min_max(jeu, joueur, adversaire(joueur_actif), nb_coups+1, ti, tj, depth+1, max_depth);
+					depiler(jeu);
+					
+					if(joueur_actif == joueur){
+						meilleur_score = -1000;
+						if(cur_score > meilleur_score){
+							meilleur_score = cur_score;
+							*ti = i;
+							*tj = j;
+							tab[compteur_mc].ligne = i;
+							tab[compteur_mc].colonne = j;
+						}
+						compteur_mc++;
+					}
+					
+					if(joueur_actif == adversaire(joueur)){
+						meilleur_score = 1000;
+						if(cur_score < meilleur_score){
+								meilleur_score = cur_score;
+								*ti = i;
+								*tj = j;
+								tab[compteur_mc].ligne = i;
+								tab[compteur_mc].colonne = j;
+						}
+						compteur_mc++;
+					}
+				} //endif coup_possible()			
+			}
+		}
+		if(compteur_mc > 0){
+			int al = rand()%compteur_mc;
+			*ti = tab[al].ligne;
+			*tj = tab[al].colonne;
+		}
+		else{
+			*ti =-1;
+			*tj =-1;
+		}
+	}
     /*  pour tous les coups possibles
             sauvegarder le jeu (empiler)
             jouer ce coup
@@ -227,21 +280,34 @@ int min_max(othello* jeu, char joueur, char joueur_actif, int nb_coups, int*ti, 
 int score(othello* jeu, char joueur, int depth, int nb_coups){
     int i,j,score=0;
     
-    /* chaque case vaut 1 */
-    for(i=0;i<TAILLE;i++){
-        for(j=0;j<TAILLE;j++){
-            if(jeu->data[i][j] == joueur)
-                //si le pion est dans un coin on ajoute 3 aux score
-                if((i==0 && j==0)||(i==TAILLE-1 && j==TAILLE-1))
-					score+=3;
-				//si le pion est ni sur une bordure ni dans un coin on ajoute 1 au score
-				if((i!=0 && i!=TAILLE-1) && (j!=0 && j!=TAILLE-1))
+    /* chaque case vaut 1 si la partie est fini */
+    if(partie_finie(nb_coups, 0)){
+		for(i=0;i<TAILLE;i++){
+			for(j=0;j<TAILLE;j++){
+				if(jeu->data[i][j] == joueur)
 					score++;
-				//si le pion est sur une bordure
-				else if((i==0||i==TAILLE-1)&&(j!=0 && j!= TAILLE-1) || (i!=0 && i != TAILLE-1)&&(j==0||j==TAILLE-1))
-					score+=2;
-        }
-    }
+			}
+		}
+	}
+	else{// si la partie est en cours chaque case a une particularité celon sa position pour le joueur
+		//initialisation d'un tableau representant les points attribué à la place pertinente du pion du joueur dans l'othellier
+		int evalPlace[8][8] = { {500 ,-150,30,10,10,30,-150,500 }, 
+							{-150,-250,0 ,0 ,0 ,0 ,-250,-150},
+							{30  ,0   ,1 ,2 ,2 ,1 ,0   ,30  },
+							{10  ,0   ,2 ,16,16,2 ,0   ,10  },
+							{10  ,0   ,2 ,16,16,2 ,0   ,10  },
+							{30  ,0   ,1 ,2 ,2 ,1 ,0   ,30  },
+							{-150,-250,0 ,0 ,0 ,0 ,-250,-150},
+							{500 ,-150,30,10,10,30,-150,500 }
+						};			
+							
+		for(i=0; i<TAILLE; i++){
+			for(j=0; j<TAILLE; j++){
+				if(jeu->data[i][j] == joueur)
+					score +=evalPlace[i][j]; 
+			}
+		}
+	}
     return score;
 }
 

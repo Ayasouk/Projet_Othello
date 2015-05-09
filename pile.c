@@ -10,6 +10,8 @@ void init_pile(){
 /* Création d'un maillon */
 maillon* creer_maillon(othello oth){
     maillon* m = (maillon*) malloc(sizeof(maillon));
+    m->prev = NULL;
+    m->next = NULL;
     m->val = oth;
     return m;
 }
